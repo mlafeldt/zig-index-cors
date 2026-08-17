@@ -1,0 +1,55 @@
+name: mirror
+
+on:
+  # Upstream publishes a new master build roughly once a day (~06:00-08:00 UTC),
+  # plus occasional release updates. Hourly keeps us close to upstream cheaply
+  # and absorbs GitHub's scheduler delays.
+  schedule:
+    - cron: "17 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Fetch upstream index
+        run: ./scripts/mirror.sh
+
+      # Pushes made with GITHUB_TOKEN do not trigger workflows, so the push
+      # trigger above cannot loop.
+      - name: Commit changes
+        run: |
+          if git diff --quiet -- public; then
+            echo "no upstream change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public
+          git commit -m "mirror: zig $(jq -r '.master.version' public/index.json)"
+          git push
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
