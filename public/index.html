@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zig build index mirror</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+        max-width: 46rem;
+        font: 16px/1.6 system-ui, sans-serif;
+      }
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.9em;
+      }
+      pre {
+        padding: 0.9rem 1rem;
+        overflow-x: auto;
+        border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+        border-radius: 6px;
+      }
+      h1 {
+        margin-bottom: 0.25rem;
+        font-size: 1.6rem;
+      }
+      .sub {
+        margin-top: 0;
+        opacity: 0.7;
+      }
+      dt {
+        font-weight: 600;
+      }
+      dd {
+        margin: 0 0 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Zig build index mirror</h1>
+    <p class="sub">
+      A CORS-enabled mirror of
+      <a href="https://ziglang.org/download/index.json">ziglang.org/download/index.json</a>.
+    </p>
+
+    <p>
+      The upstream index ships no <code>Access-Control-Allow-Origin</code> header, so browsers cannot
+      fetch it directly. GitHub Pages serves everything with <code>Access-Control-Allow-Origin: *</code>,
+      which makes this copy usable from any web page.
+    </p>
+
+    <h2>Endpoints</h2>
+    <dl>
+      <dt><a href="./index.json">index.json</a></dt>
+      <dd>Byte-for-byte copy of the upstream index.</dd>
+      <dt><a href="./meta.json">meta.json</a></dt>
+      <dd>When the copy was taken, plus upstream <code>Last-Modified</code> / <code>ETag</code>.</dd>
+    </dl>
+
+    <h2>Usage</h2>
+    <pre><code>const res = await fetch(
+  "https://mlafeldt.github.io/zig-build-index/index.json",
+);
+const index = await res.json();
+console.log(index.master.version);</code></pre>
+
+    <h2>Freshness</h2>
+    <p>
+      A GitHub Actions job re-fetches the upstream index every hour and commits it only when it
+      actually changed. Upstream itself publishes a new <code>master</code> build about once a day.
+    </p>
+
+    <p id="live"></p>
+
+    <p>
+      Source:
+      <a href="https://github.com/mlafeldt/zig-build-index">github.com/mlafeldt/zig-build-index</a>
+    </p>
+
+    <script>
+      fetch("./meta.json")
+        .then((r) => r.json())
+        .then((m) => {
+          document.getElementById("live").textContent =
+            `Currently mirroring Zig master ${m.master.version} (${m.master.date}), fetched ${m.mirrored_at}.`;
+        })
+        .catch(() => {});
+    </script>
+  </body>
+</html>
