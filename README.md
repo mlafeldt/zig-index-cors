@@ -19,13 +19,19 @@ const index = await (
 console.log(index.master.version);
 ```
 
+GitHub Pages serves both files with `Cache-Control: max-age=600`, so a fresh mirror can
+take up to ten more minutes to reach you through the CDN. Both files also carry an
+`ETag`, so conditional requests are cheap.
+
 ## How it works
 
 `.github/workflows/mirror.yml` runs `scripts/mirror.sh` on a schedule:
 
 1. `curl` the upstream index (retries on transient failures).
-2. Sanity-check it with `jq` — must be a JSON object with a `master` key and more than
-   one version, so error pages or truncated bodies never get mirrored.
+2. Sanity-check it with `jq` — must be a JSON object holding more than one version,
+   with a non-empty `master.version` and `master.date`, so error pages, truncated
+   bodies, and payloads that would produce a `null`-filled `meta.json` never get
+   mirrored.
 3. If the bytes are identical to `public/index.json`, stop. Otherwise write
    `index.json` + `meta.json`, commit, and push.
 4. Deploy `public/` to GitHub Pages — but scheduled runs skip this unless step 3
@@ -34,7 +40,13 @@ console.log(index.master.version);
 Commits are made with `GITHUB_TOKEN`, which does not trigger workflows, so the `push`
 trigger cannot loop. The git history doubles as a changelog of upstream index changes.
 
-Run it locally with `./scripts/mirror.sh`.
+`mirrored_at` in `meta.json` records when the current payload was fetched, not when the job
+last ran — the job only writes on a real change. So a stale `mirrored_at` means upstream
+has been quiet, not that the mirror is broken. A broken mirror surfaces as a failed
+scheduled run, which GitHub emails to the repository owner.
+
+Run it locally with `./scripts/mirror.sh`; `OUT_DIR=/tmp/x ./scripts/mirror.sh` writes
+somewhere else.
 
 ## How often does upstream change?
 
@@ -62,7 +74,6 @@ sometimes drops scheduled workflows under load — a single daily cron that gets
 means a full day of staleness with no retry. The fetches are cheap; the Pages deploy is
 the expensive part, and it only fires on real changes (roughly once a day).
 
-## Setup
+## License
 
-GitHub Pages must be set to **Build and deployment → Source: GitHub Actions** in the
-repository settings.
+MIT — see [LICENSE](LICENSE).
