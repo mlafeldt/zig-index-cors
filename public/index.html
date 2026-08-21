@@ -4,9 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Zig index CORS mirror</title>
+    <meta
+      name="description"
+      content="A CORS-enabled mirror of ziglang.org/download/index.json, refreshed several times a day and served from GitHub Pages."
+    />
     <style>
       :root {
         color-scheme: light dark;
+        /* Zig's brand orange, darkened for contrast on a light background. */
+        --accent: #b45309;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --accent: #f7a41d;
+        }
       }
       body {
         margin: 0 auto;
@@ -28,6 +39,7 @@
       h1 {
         margin-bottom: 0.25rem;
         font-size: 1.6rem;
+        color: var(--accent);
       }
       .sub {
         margin-top: 0;
@@ -75,8 +87,12 @@ console.log(index.master.version);</code></pre>
       the early-UTC window when Zig publishes — and commits and republishes only when it actually
       changed. Upstream itself publishes a new <code>master</code> build about once a day.
     </p>
+    <p>
+      GitHub Pages serves both files with <code>Cache-Control: max-age=600</code>, so a fresh mirror
+      can take up to ten more minutes to reach you through the CDN.
+    </p>
 
-    <p id="live"></p>
+    <p id="live">Mirror status: see <a href="./meta.json">meta.json</a>.</p>
 
     <p>
       Source:
@@ -84,13 +100,18 @@ console.log(index.master.version);</code></pre>
     </p>
 
     <script>
-      fetch("./meta.json")
-        .then((r) => r.json())
-        .then((m) => {
-          document.getElementById("live").textContent =
-            `Currently mirroring Zig master ${m.master.version} (${m.master.date}), fetched ${m.mirrored_at}.`;
+      const live = document.getElementById("live");
+      fetch("./meta.json", { cache: "no-store" })
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
         })
-        .catch(() => {});
+        .then((m) => {
+          live.textContent = `Currently mirroring Zig master ${m.master.version} (${m.master.date}), fetched ${m.mirrored_at}.`;
+        })
+        .catch(() => {
+          /* Leave the static fallback link in place. */
+        });
     </script>
   </body>
 </html>
