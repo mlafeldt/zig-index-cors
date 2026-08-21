@@ -74,6 +74,10 @@ sometimes drops scheduled workflows under load — a single daily cron that gets
 means a full day of staleness with no retry. The fetches are cheap; the Pages deploy is
 the expensive part, and it only fires on real changes (roughly once a day).
 
+## Used by
+
+- [What Zig Is It?](https://mathias.blog/tools/whatzigisit)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
