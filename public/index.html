@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Zig build index mirror</title>
+    <title>Zig index CORS mirror</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -42,7 +42,7 @@
     </style>
   </head>
   <body>
-    <h1>Zig build index mirror</h1>
+    <h1>Zig index CORS mirror</h1>
     <p class="sub">
       A CORS-enabled mirror of
       <a href="https://ziglang.org/download/index.json">ziglang.org/download/index.json</a>.
@@ -64,7 +64,7 @@
 
     <h2>Usage</h2>
     <pre><code>const res = await fetch(
-  "https://mlafeldt.github.io/zig-build-index/index.json",
+  "https://mlafeldt.github.io/zig-index-cors/index.json",
 );
 const index = await res.json();
 console.log(index.master.version);</code></pre>
@@ -80,7 +80,7 @@ console.log(index.master.version);</code></pre>
 
     <p>
       Source:
-      <a href="https://github.com/mlafeldt/zig-build-index">github.com/mlafeldt/zig-build-index</a>
+      <a href="https://github.com/mlafeldt/zig-index-cors">github.com/mlafeldt/zig-index-cors</a>
     </p>
 
     <script>

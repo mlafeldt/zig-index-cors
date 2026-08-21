@@ -1,4 +1,4 @@
-# zig-build-index
+# zig-index-cors
 
 CORS-enabled mirror of [`https://ziglang.org/download/index.json`](https://ziglang.org/download/index.json).
 
@@ -9,12 +9,12 @@ cannot fetch it. GitHub Pages serves every file with `Access-Control-Allow-Origi
 
 | URL | Contents |
 | --- | --- |
-| <https://mlafeldt.github.io/zig-build-index/index.json> | Byte-for-byte copy of the upstream index |
-| <https://mlafeldt.github.io/zig-build-index/meta.json> | Fetch timestamp, upstream `Last-Modified` and `ETag`, current master version |
+| <https://mlafeldt.github.io/zig-index-cors/index.json> | Byte-for-byte copy of the upstream index |
+| <https://mlafeldt.github.io/zig-index-cors/meta.json> | Fetch timestamp, upstream `Last-Modified` and `ETag`, current master version |
 
 ```js
 const index = await (
-  await fetch("https://mlafeldt.github.io/zig-build-index/index.json")
+  await fetch("https://mlafeldt.github.io/zig-index-cors/index.json")
 ).json();
 console.log(index.master.version);
 ```
