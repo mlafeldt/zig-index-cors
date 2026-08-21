@@ -34,6 +34,8 @@ jobs:
         id: mirror
         run: |
           ./scripts/mirror.sh
+          # Quiet on no-op runs only because mirror.sh skips rewriting meta.json
+          # (whose mirrored_at is volatile) when upstream is byte-identical.
           if git diff --quiet -- public; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -48,7 +50,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public
-          git commit -m "mirror: zig $(jq -r '.master.version' public/index.json)"
+          git commit -m "mirror: zig $(jq -r '.master.version' public/meta.json)"
           git push
 
   # Republishing identical bytes every run would just pile up deployment

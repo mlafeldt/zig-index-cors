@@ -37,25 +37,35 @@ if ! jq -e '
 	exit 1
 fi
 
+master_version=$(jq -r '.master.version' "$body")
+master_date=$(jq -r '.master.date' "$body")
+
 mkdir -p "$OUT_DIR"
 
+# This guard also keeps CI honest: without it, meta.json's mirrored_at would
+# change on every run and the workflow's `git diff` would commit every run.
 if [ -f "$INDEX" ] && cmp -s "$body" "$INDEX"; then
-	echo "unchanged: $(jq -r '.master.version' "$INDEX")"
+	echo "unchanged: $master_version"
 	exit 0
 fi
 
 header() { tr -d '\r' <"$headers" | awk -v k="$1" 'tolower($1) == tolower(k) ":" { $1=""; sub(/^ /, ""); print }' | tail -n 1; }
 
-cp "$body" "$INDEX"
-
+# Headers upstream did not send become null, not "".
 jq -n \
 	--arg upstream "$UPSTREAM" \
 	--arg mirrored_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 	--arg last_modified "$(header Last-Modified)" \
 	--arg etag "$(header ETag)" \
-	--arg master "$(jq -r '.master.version' "$INDEX")" \
-	--arg master_date "$(jq -r '.master.date' "$INDEX")" \
-	'{upstream: $upstream, mirrored_at: $mirrored_at, last_modified: $last_modified, etag: $etag, master: {version: $master, date: $master_date}}' \
-	>"$META"
+	--arg master "$master_version" \
+	--arg master_date "$master_date" \
+	'{upstream: $upstream, mirrored_at: $mirrored_at, last_modified: $last_modified, etag: $etag, master: {version: $master, date: $master_date}}
+	| (.last_modified, .etag) |= (if . == "" then null else . end)' \
+	>"$tmp_dir/meta.json"
 
-echo "updated: $(jq -r '.master.version' "$INDEX")"
+# Publish both files only after both exist, so a failure midway cannot leave a
+# fresh index.json next to a stale or empty meta.json.
+cp "$body" "$INDEX"
+cp "$tmp_dir/meta.json" "$META"
+
+echo "updated: $master_version"
