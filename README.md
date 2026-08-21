@@ -77,3 +77,7 @@ the expensive part, and it only fires on real changes (roughly once a day).
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+*This project was proudly built with AI.*
