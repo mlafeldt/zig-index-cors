@@ -22,8 +22,20 @@ curl --fail --silent --show-error --location \
 	"$UPSTREAM"
 
 # Reject anything that is not a JSON object keyed by version (guards against
-# error pages or truncated responses getting mirrored).
-jq -e 'type == "object" and has("master") and (keys | length) > 1' "$body" >/dev/null
+# error pages or truncated responses getting mirrored). meta.json is built from
+# .master.version and .master.date, so require both rather than writing "null".
+if ! jq -e '
+	type == "object"
+	and (keys | length) > 1
+	and ((.master.version? // "") | type == "string" and length > 0)
+	and ((.master.date? // "") | type == "string" and length > 0)
+' "$body" >/dev/null 2>&1; then
+	echo "refusing to mirror: $UPSTREAM returned a payload that is not a Zig index" >&2
+	echo "first 200 bytes:" >&2
+	head -c 200 "$body" >&2
+	echo >&2
+	exit 1
+fi
 
 mkdir -p "$OUT_DIR"
 
