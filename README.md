@@ -12,10 +12,13 @@ cannot fetch it. GitHub Pages serves every file with `Access-Control-Allow-Origi
 | <https://mlafeldt.github.io/zig-index-cors/index.json> | Byte-for-byte copy of the upstream index |
 | <https://mlafeldt.github.io/zig-index-cors/meta.json> | Fetch timestamp, upstream `Last-Modified` and `ETag`, current master version |
 
+Use it from any page:
+
 ```js
-const index = await (
-  await fetch("https://mlafeldt.github.io/zig-index-cors/index.json")
-).json();
+const res = await fetch(
+  "https://mlafeldt.github.io/zig-index-cors/index.json",
+);
+const index = await res.json();
 console.log(index.master.version);
 ```
 
