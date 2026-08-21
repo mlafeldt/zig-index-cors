@@ -11,6 +11,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least privilege by default; jobs widen this only where they need to.
+permissions:
+  contents: read
+
 concurrency:
   group: mirror
   cancel-in-progress: false
@@ -18,6 +22,7 @@ concurrency:
 jobs:
   mirror:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     outputs:
@@ -52,6 +57,7 @@ jobs:
     needs: mirror
     if: needs.mirror.outputs.changed == 'true' || github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pages: write
@@ -60,6 +66,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      # main, not the triggering SHA, so we publish the commit the mirror job
+      # just pushed rather than the tree it started from.
       - uses: actions/checkout@v5
         with:
           ref: main
