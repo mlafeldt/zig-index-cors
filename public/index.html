@@ -71,8 +71,9 @@ console.log(index.master.version);</code></pre>
 
     <h2>Freshness</h2>
     <p>
-      A GitHub Actions job re-fetches the upstream index every hour and commits it only when it
-      actually changed. Upstream itself publishes a new <code>master</code> build about once a day.
+      A GitHub Actions job re-fetches the upstream index about ten times a day — clustered around
+      the early-UTC window when Zig publishes — and commits and republishes only when it actually
+      changed. Upstream itself publishes a new <code>master</code> build about once a day.
     </p>
 
     <p id="live"></p>

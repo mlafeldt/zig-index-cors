@@ -1,19 +1,15 @@
 name: mirror
 
 on:
-  # Upstream publishes a new master build roughly once a day (~06:00-08:00 UTC),
-  # plus occasional release updates. Hourly keeps us close to upstream cheaply
-  # and absorbs GitHub's scheduler delays.
+  # Upstream only moves when a new master build is published (~once a day, early
+  # UTC morning), so poll densely across that window and a few times outside it
+  # to catch tagged releases and recover from runs GitHub skips under load.
   schedule:
-    - cron: "17 * * * *"
+    - cron: "20 5-10 * * *"
+    - cron: "50 */6 * * *"
   push:
     branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: mirror
@@ -22,28 +18,51 @@ concurrency:
 jobs:
   mirror:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.mirror.outputs.changed }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Fetch upstream index
-        run: ./scripts/mirror.sh
+        id: mirror
+        run: |
+          ./scripts/mirror.sh
+          if git diff --quiet -- public; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # Pushes made with GITHUB_TOKEN do not trigger workflows, so the push
       # trigger above cannot loop.
       - name: Commit changes
+        if: steps.mirror.outputs.changed == 'true'
         run: |
-          if git diff --quiet -- public; then
-            echo "no upstream change"
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public
           git commit -m "mirror: zig $(jq -r '.master.version' public/index.json)"
           git push
+
+  # Republishing identical bytes every run would just pile up deployment
+  # records, so scheduled runs deploy only when the mirror actually changed.
+  deploy:
+    needs: mirror
+    if: needs.mirror.outputs.changed == 'true' || github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
 
       - uses: actions/configure-pages@v5
 

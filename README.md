@@ -21,14 +21,15 @@ console.log(index.master.version);
 
 ## How it works
 
-`.github/workflows/mirror.yml` runs `scripts/mirror.sh` every hour:
+`.github/workflows/mirror.yml` runs `scripts/mirror.sh` on a schedule:
 
 1. `curl` the upstream index (retries on transient failures).
 2. Sanity-check it with `jq` — must be a JSON object with a `master` key and more than
    one version, so error pages or truncated bodies never get mirrored.
 3. If the bytes are identical to `public/index.json`, stop. Otherwise write
    `index.json` + `meta.json`, commit, and push.
-4. Deploy `public/` to GitHub Pages.
+4. Deploy `public/` to GitHub Pages — but scheduled runs skip this unless step 3
+   actually changed something, so identical bytes are never republished.
 
 Commits are made with `GITHUB_TOKEN`, which does not trigger workflows, so the `push`
 trigger cannot loop. The git history doubles as a changelog of upstream index changes.
@@ -49,9 +50,17 @@ Measured against live headers and Wayback Machine snapshots (Aug 2026):
   on 2026-04-12 ≈ 682 commits in 68 days), but only the newest one lands in the index.
 - Tagged releases (`0.15.2`, `0.16.0`, …) change every few months.
 
-Hourly polling is therefore well above the real change rate; it exists to cut worst-case
-staleness (and GitHub's cron scheduler is delayed under load anyway). Drop the schedule to
-`0 */6 * * *` if hourly runs feel wasteful.
+So the schedule is shaped around that signal rather than blanketing the clock:
+
+```yaml
+- cron: "20 5-10 * * *"   # dense across the nightly publish window
+- cron: "50 */6 * * *"    # tagged releases + recovery from skipped runs
+```
+
+That's ~10 fetches a day. The extra runs beyond one exist because GitHub delays and
+sometimes drops scheduled workflows under load — a single daily cron that gets skipped
+means a full day of staleness with no retry. The fetches are cheap; the Pages deploy is
+the expensive part, and it only fires on real changes (roughly once a day).
 
 ## Setup
 
