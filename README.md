@@ -5,6 +5,9 @@ CORS-enabled mirror of [`https://ziglang.org/download/index.json`](https://zigla
 Upstream serves the index without any `Access-Control-Allow-Origin` header, so browsers
 cannot fetch it. GitHub Pages serves every file with `Access-Control-Allow-Origin: *`.
 
+Originally built for [What Zig Is It?](https://mathias.blog/tools/whatzigisit), but useful
+to anyone who needs the index from a browser.
+
 ## Endpoints
 
 | URL | Contents |
@@ -76,10 +79,6 @@ That's ~10 fetches a day. The extra runs beyond one exist because GitHub delays 
 sometimes drops scheduled workflows under load — a single daily cron that gets skipped
 means a full day of staleness with no retry. The fetches are cheap; the Pages deploy is
 the expensive part, and it only fires on real changes (roughly once a day).
-
-## Used by
-
-- [What Zig Is It?](https://mathias.blog/tools/whatzigisit)
 
 ## License
 
