@@ -1,5 +1,10 @@
 name: mirror
 
+run-name: >-
+  ${{ github.event_name == 'schedule' && github.event.schedule
+  || github.event_name == 'push' && 'main updated'
+  || 'manual run' }}
+
 on:
   # Upstream only moves when a new master build is published (~once a day, early
   # UTC morning), so poll densely across that window and a few times outside it
