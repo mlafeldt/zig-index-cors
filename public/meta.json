@@ -1,10 +1,10 @@
 {
   "upstream": "https://ziglang.org/download/index.json",
-  "mirrored_at": "2026-09-20T01:17:06Z",
-  "last_modified": "Sun, 20 Sep 2026 00:50:19 GMT",
-  "etag": "\"6aaf2dcb-12b74\"",
+  "mirrored_at": "2026-09-21T01:17:39Z",
+  "last_modified": "Sun, 20 Sep 2026 21:46:19 GMT",
+  "etag": "\"6ab0542b-12b74\"",
   "master": {
-    "version": "0.17.0-dev.2234+80fe9b2b7",
-    "date": "2026-09-19"
+    "version": "0.17.0-dev.2248+3f6a02acd",
+    "date": "2026-09-20"
   }
 }
