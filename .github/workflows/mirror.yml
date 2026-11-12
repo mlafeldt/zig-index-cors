@@ -3,12 +3,12 @@ name: mirror
 run-name: ${{ github.event.schedule || github.event_name }}
 
 on:
-  # Upstream only moves when a new master build is published (~once a day, early
-  # UTC morning), so poll densely across that window and a few times outside it
-  # to catch tagged releases and recover from runs GitHub skips under load.
+  # Upstream only moves when a new master build is published (~once a day,
+  # clustered around 01:00 and 11:00-15:00 UTC), so one fetch after both catches
+  # most builds the same day. Half past, not on the hour, when GitHub's scheduler
+  # is busiest and most likely to drop runs.
   schedule:
-    - cron: "20 5-10 * * *"
-    - cron: "50 */6 * * *"
+    - cron: "30 15 * * *"
   # Only what changes the served bytes or the machinery producing them, so a
   # README edit does not spin up a runner to redeploy an identical tree.
   push:

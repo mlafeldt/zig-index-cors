@@ -59,26 +59,23 @@ somewhere else.
 Measured against live headers and Wayback Machine snapshots (Aug 2026):
 
 - The index is rewritten when a new **master (nightly) build** is published — that's the
-  only entry that moves regularly. Observed cadence is roughly **once a day**, published
-  in the early UTC morning (e.g. `Last-Modified: Mon, 17 Aug 2026 07:58:47 GMT` for a
-  build dated `2026-08-16`).
+  only entry that moves regularly. Observed cadence is roughly **once a day**, at varying
+  times clustered around 01:00 and 11:00–15:00 UTC.
 - The build's `date` field trails the publish time by 1–3 days, so builds are not strictly
   nightly — gaps appear when master CI isn't green.
 - Zig master takes ~10 commits/day (`0.16.0-dev.2471` on 2026-02-03 → `0.16.0-dev.3153`
   on 2026-04-12 ≈ 682 commits in 68 days), but only the newest one lands in the index.
 - Tagged releases (`0.15.2`, `0.16.0`, …) change every few months.
 
-So the schedule is shaped around that signal rather than blanketing the clock:
+So one fetch a day, after both clusters, picks up most builds the same day:
 
 ```yaml
-- cron: "20 5-10 * * *"   # dense across the nightly publish window
-- cron: "50 */6 * * *"    # tagged releases + recovery from skipped runs
+- cron: "30 15 * * *"
 ```
 
-That's ~10 fetches a day. The extra runs beyond one exist because GitHub delays and
-sometimes drops scheduled workflows under load — a single daily cron that gets skipped
-means a full day of staleness with no retry. The fetches are cheap; the Pages deploy is
-the expensive part, and it only fires on real changes (roughly once a day).
+The trade-off: GitHub delays and sometimes drops scheduled workflows under load, and a
+skipped run means a full day of staleness with no retry. Trigger the workflow manually
+(`workflow_dispatch`) if you need a fresher index sooner.
 
 ## License
 
