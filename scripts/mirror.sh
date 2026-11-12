@@ -14,12 +14,14 @@ trap 'rm -rf "$tmp_dir"' EXIT
 body="$tmp_dir/index.json"
 headers="$tmp_dir/headers.txt"
 
+# --write-out reports the final response's headers, so redirects need no special
+# handling. A header upstream did not send comes through as an empty line.
 curl --fail --silent --show-error --location \
 	--retry 5 --retry-delay 5 --retry-all-errors \
 	--max-time 60 \
-	--dump-header "$headers" \
+	--write-out '%header{last-modified}\n%header{etag}\n' \
 	--output "$body" \
-	"$UPSTREAM"
+	"$UPSTREAM" >"$headers"
 
 # Reject anything that is not a JSON object keyed by version (guards against
 # error pages or truncated responses getting mirrored). meta.json is built from
@@ -27,8 +29,8 @@ curl --fail --silent --show-error --location \
 if ! jq -e '
 	type == "object"
 	and (keys | length) > 1
-	and ((.master.version? // "") | type == "string" and length > 0)
-	and ((.master.date? // "") | type == "string" and length > 0)
+	and ((.master.version | strings | length) > 0)
+	and ((.master.date | strings | length) > 0)
 ' "$body" >/dev/null 2>&1; then
 	echo "refusing to mirror: $UPSTREAM returned a payload that is not a Zig index" >&2
 	echo "first 200 bytes:" >&2
@@ -43,20 +45,20 @@ master_date=$(jq -r '.master.date' "$body")
 mkdir -p "$OUT_DIR"
 
 # This guard also keeps CI honest: without it, meta.json's mirrored_at would
-# change on every run and the workflow's `git diff` would commit every run.
+# change on every run and the workflow would commit every run.
 if [ -f "$INDEX" ] && cmp -s "$body" "$INDEX"; then
 	echo "unchanged: $master_version"
 	exit 0
 fi
 
-header() { tr -d '\r' <"$headers" | awk -v k="$1" 'tolower($1) == tolower(k) ":" { $1=""; sub(/^ /, ""); print }' | tail -n 1; }
+{ read -r last_modified; read -r etag; } <"$headers"
 
 # Headers upstream did not send become null, not "".
 jq -n \
 	--arg upstream "$UPSTREAM" \
 	--arg mirrored_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-	--arg last_modified "$(header Last-Modified)" \
-	--arg etag "$(header ETag)" \
+	--arg last_modified "$last_modified" \
+	--arg etag "$etag" \
 	--arg master "$master_version" \
 	--arg master_date "$master_date" \
 	'{upstream: $upstream, mirrored_at: $mirrored_at, last_modified: $last_modified, etag: $etag, master: {version: $master, date: $master_date}}

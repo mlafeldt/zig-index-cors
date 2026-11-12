@@ -1,9 +1,6 @@
 name: mirror
 
-run-name: >-
-  ${{ github.event_name == 'schedule' && github.event.schedule
-  || github.event_name == 'push' && 'main updated'
-  || 'manual run' }}
+run-name: ${{ github.event.schedule || github.event_name }}
 
 on:
   # Upstream only moves when a new master build is published (~once a day, early
@@ -12,8 +9,14 @@ on:
   schedule:
     - cron: "20 5-10 * * *"
     - cron: "50 */6 * * *"
+  # Only what changes the served bytes or the machinery producing them, so a
+  # README edit does not spin up a runner to redeploy an identical tree.
   push:
     branches: [main]
+    paths:
+      - public/**
+      - scripts/**
+      - .github/workflows/mirror.yml
   workflow_dispatch:
 
 # Least privilege by default; jobs widen this only where they need to.
@@ -39,13 +42,11 @@ jobs:
         id: mirror
         run: |
           ./scripts/mirror.sh
-          # Quiet on no-op runs only because mirror.sh skips rewriting meta.json
-          # (whose mirrored_at is volatile) when upstream is byte-identical.
-          if git diff --quiet -- public; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
+          # mirror.sh rewrites meta.json (whose mirrored_at is volatile) only on a
+          # real upstream change, so staging public/ leaves an empty diff on no-op
+          # runs — and otherwise holds exactly what the commit step will commit.
+          git add public
+          echo "changed=$(git diff --cached --quiet && echo false || echo true)" >> "$GITHUB_OUTPUT"
 
       # Pushes made with GITHUB_TOKEN do not trigger workflows, so the push
       # trigger above cannot loop.
@@ -54,7 +55,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public
           git commit -m "mirror: zig $(jq -r '.master.version' public/meta.json)"
           git push
 

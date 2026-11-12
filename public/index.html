@@ -71,7 +71,10 @@
       <dt><a href="./index.json">index.json</a></dt>
       <dd>Byte-for-byte copy of the upstream index.</dd>
       <dt><a href="./meta.json">meta.json</a></dt>
-      <dd>When the copy was taken, plus upstream <code>Last-Modified</code> / <code>ETag</code>.</dd>
+      <dd>
+        Current <code>master</code> version and date, when the copy was taken, plus upstream
+        <code>Last-Modified</code> / <code>ETag</code>.
+      </dd>
     </dl>
 
     <h2>Usage</h2>
@@ -102,10 +105,7 @@ console.log(index.master.version);</code></pre>
     <script>
       const live = document.getElementById("live");
       fetch("./meta.json", { cache: "no-store" })
-        .then((r) => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
-        })
+        .then((r) => r.json())
         .then((m) => {
           live.textContent = `Currently mirroring Zig master ${m.master.version} (${m.master.date}), fetched ${m.mirrored_at}.`;
         })
