@@ -60,18 +60,14 @@ jobs:
 
   # Republishing identical bytes every run would just pile up deployment
   # records, so scheduled runs deploy only when the mirror actually changed.
-  deploy:
+  build:
     needs: mirror
     if: needs.mirror.outputs.changed == 'true' || github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      pages: read
     steps:
       # main, not the triggering SHA, so we publish the commit the mirror job
       # just pushed rather than the tree it started from.
@@ -85,5 +81,21 @@ jobs:
         with:
           path: public
 
+  # Separate from build: deploy-pages looks the artifact up through an API that
+  # can lag the upload by seconds, so in the same job it can find none; and
+  # re-running a failed deploy then reuses the artifact instead of uploading a
+  # second one with the same name, which deploy-pages also rejects.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v5
